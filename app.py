@@ -327,6 +327,7 @@ st.set_page_config(page_title="House Price Prediction App", layout="wide")
 st.title("House Price Prediction App")
 st.write("This app predicts house prices using linear regression based on features like size, bedrooms, etc.")
 
+
 @st.cache_data
 def load_sample_data():
     np.random.seed(42)
@@ -366,7 +367,6 @@ if data_source == "Upload your own CSV file":
             data = pd.read_csv(uploaded_file)
             st.success("File uploaded successfully!")
             
-            # Allow user to select the target column
             target_column = st.selectbox(
                 "Select the column that contains the house prices (target variable):",
                 options=data.columns.tolist()
