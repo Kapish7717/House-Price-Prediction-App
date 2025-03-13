@@ -322,31 +322,24 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import io
 
-# Set page configuration
 st.set_page_config(page_title="House Price Prediction App", layout="wide")
 
-# App title and description
 st.title("House Price Prediction App")
 st.write("This app predicts house prices using linear regression based on features like size, bedrooms, etc.")
 
-# Step 1: Data loading
 @st.cache_data
 def load_sample_data():
-    # For demonstration, generate some sample data
     np.random.seed(42)
     n_samples = 1000
     
-    # Generate synthetic house data
-    size = np.random.randint(500, 5000, n_samples)  # house size in sq ft
-    bedrooms = np.random.randint(1, 7, n_samples)   # number of bedrooms
-    bathrooms = np.random.randint(1, 5, n_samples)  # number of bathrooms
-    age = np.random.randint(0, 50, n_samples)       # age of house in years
+    size = np.random.randint(500, 5000, n_samples) 
+    bedrooms = np.random.randint(1, 7, n_samples)  
+    bathrooms = np.random.randint(1, 5, n_samples) 
+    age = np.random.randint(0, 50, n_samples)       
     
-    # Generate price with some noise
     price = 50000 + 100 * size + 25000 * bedrooms + 35000 * bathrooms - 1000 * age
     price = price + np.random.normal(0, 50000, n_samples)  # add some noise
     
-    # Create DataFrame
     data = pd.DataFrame({
         'size': size,
         'bedrooms': bedrooms,
@@ -357,17 +350,14 @@ def load_sample_data():
     
     return data
 
-# Data source selection
 st.header("Data Source")
 data_source = st.radio(
     "Choose your data source:",
     ["Upload your own CSV file", "Use sample data"]
 )
 
-# Initialize data variable
 data = None
 
-# Handle file upload
 if data_source == "Upload your own CSV file":
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     
@@ -382,14 +372,11 @@ if data_source == "Upload your own CSV file":
                 options=data.columns.tolist()
             )
             
-            # Set the target column as 'price' for consistency in the app
             data = data.rename(columns={target_column: 'price'})
             
-            # Display data types and allow user to select numerical columns
             st.write("Column data types:")
             st.write(data.dtypes)
             
-            # Select features (only numerical columns except the target)
             numerical_columns = data.select_dtypes(include=['int64', 'float64']).columns.tolist()
             if 'price' in numerical_columns:
                 numerical_columns.remove('price')
@@ -400,7 +387,6 @@ if data_source == "Upload your own CSV file":
                 default=numerical_columns
             )
             
-            # Filter data to include only selected features and target
             if feature_columns:
                 data = data[feature_columns + ['price']]
             else:
@@ -411,37 +397,30 @@ if data_source == "Upload your own CSV file":
             st.error("Please ensure your CSV file is properly formatted with numerical data.")
             data = None
 else:
-    # Use sample data
     data = load_sample_data()
     st.info("Using sample data with features: size, bedrooms, bathrooms, age and price.")
 
-# Continue only if data is loaded
 if data is not None:
-    # Step 2: Data overview section
     st.header("Data Overview")
     if st.checkbox("Show raw data"):
         st.write(data.head(10))
 
     st.write(f"Dataset contains {data.shape[0]} houses with {data.shape[1]} features.")
 
-    # Show basic statistics
     if st.checkbox("Show statistics"):
         st.write(data.describe())
         
-    # Check for missing values
     missing_values = data.isnull().sum()
     if missing_values.sum() > 0:
         st.warning("Your dataset contains missing values:")
         st.write(missing_values[missing_values > 0])
         
-        # Handle missing values
         if st.button("Remove rows with missing values"):
             data = data.dropna()
             st.success(f"Removed rows with missing values. New dataset shape: {data.shape}")
 
-    # Step 3: Data visualization
     st.header("Data Visualization")
-    if len(data.columns) > 1:  # Make sure there's at least one feature besides price
+    if len(data.columns) > 1:  
         feature_to_plot = st.selectbox("Select feature to visualize against price", 
                                       [col for col in data.columns if col != 'price'])
 
@@ -452,10 +431,8 @@ if data is not None:
         ax.set_title(f"{feature_to_plot.capitalize()} vs. Price")
         st.pyplot(fig)
 
-    # Step 4: Model building section
     st.header("Build and Train Model")
 
-    # Let user select features
     st.subheader("Select Features for Training")
     available_features = [col for col in data.columns if col != 'price']
     selected_features = st.multiselect(
@@ -467,31 +444,25 @@ if data is not None:
     if not selected_features:
         st.error("Please select at least one feature.")
     else:
-        # Prepare data
         X = data[selected_features]
         y = data['price']
         
-        # Split data
         test_size = st.slider("Select test data percentage", 10, 50, 20) / 100
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
         
-        # Train model
         if st.button("Train Model"):
             with st.spinner("Training model..."):
                 model = LinearRegression()
                 model.fit(X_train, y_train)
                 
-                # Make predictions
                 y_pred_train = model.predict(X_train)
                 y_pred_test = model.predict(X_test)
                 
-                # Calculate metrics
                 train_rmse = np.sqrt(mean_squared_error(y_train, y_pred_train))
                 test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
                 train_r2 = r2_score(y_train, y_pred_train)
                 test_r2 = r2_score(y_test, y_pred_test)
                 
-                # Display metrics
                 st.subheader("Model Performance")
                 col1, col2 = st.columns(2)
                 with col1:
@@ -503,7 +474,6 @@ if data is not None:
                     st.write(f"RMSE: ${test_rmse:.2f}")
                     st.write(f"R²: {test_r2:.4f}")
                 
-                # Show coefficients
                 st.subheader("Model Coefficients")
                 coef_df = pd.DataFrame({
                     'Feature': selected_features,
@@ -512,7 +482,6 @@ if data is not None:
                 st.write(f"Intercept: ${model.intercept_:.2f}")
                 st.write(coef_df)
                 
-                # Plot actual vs predicted prices
                 st.subheader("Actual vs Predicted Prices")
                 fig, ax = plt.subplots(figsize=(10, 6))
                 ax.scatter(y_test, y_pred_test, alpha=0.5)
@@ -522,26 +491,20 @@ if data is not None:
                 ax.set_title("Actual vs Predicted House Prices")
                 st.pyplot(fig)
                 
-                # Save model for prediction
                 st.session_state['model'] = model
                 st.session_state['features'] = selected_features
                 st.success("Model trained successfully! You can now make predictions.")
 
-        # Step 5: Make predictions
         st.header("Make Predictions")
         st.write("Enter house details to predict its price")
 
-        # Initialize input columns
         col1, col2 = st.columns(2)
 
-        # Create input fields based on selected features
         user_input = {}
         if 'features' in st.session_state:
-            # Split features across two columns
             features_left = st.session_state['features'][:len(st.session_state['features'])//2 + len(st.session_state['features'])%2]
             features_right = st.session_state['features'][len(st.session_state['features'])//2 + len(st.session_state['features'])%2:]
             
-            # Left column inputs
             for feature in features_left:
                 min_val = float(data[feature].min())
                 max_val = float(data[feature].max())
@@ -553,7 +516,6 @@ if data is not None:
                     value=default_val
                 )
             
-            # Right column inputs
             for feature in features_right:
                 min_val = float(data[feature].min())
                 max_val = float(data[feature].max())
@@ -565,19 +527,14 @@ if data is not None:
                     value=default_val
                 )
             
-            # Make prediction when button is clicked
             if st.button("Predict Price"):
                 if 'model' in st.session_state:
-                    # Create input DataFrame
                     input_df = pd.DataFrame([user_input])
                     
-                    # Make prediction
                     prediction = st.session_state['model'].predict(input_df)[0]
                     
-                    # Display prediction
                     st.success(f"Predicted House Price: ${prediction:,.2f}")
                     
-                    # Show explanation of prediction
                     st.subheader("Explanation")
                     st.write("This prediction is based on the following:")
                     
@@ -590,7 +547,6 @@ if data is not None:
                     explanation['Contribution'] = explanation['Contribution'].round(2)
                     st.write(explanation)
                     
-                    # Add base price (intercept)
                     st.write(f"Base price (intercept): ${st.session_state['model'].intercept_:.2f}")
                     st.write(f"Sum of all contributions: ${explanation['Contribution'].sum() + st.session_state['model'].intercept_:.2f}")
                 else:
@@ -598,29 +554,23 @@ if data is not None:
         else:
             st.info("Please select features and train the model before making predictions.")
 
-    # Step 6: Download trained model
     if 'model' in st.session_state:
         st.header("Download Model Results")
         
-        # Create a download button for model coefficients
         coef_df = pd.DataFrame({
             'Feature': st.session_state['features'],
             'Coefficient': st.session_state['model'].coef_
         })
         
-        # Add intercept
         intercept_df = pd.DataFrame({
             'Feature': ['Intercept'],
             'Coefficient': [st.session_state['model'].intercept_]
         })
         
-        # Combine
         model_results = pd.concat([intercept_df, coef_df], ignore_index=True)
         
-        # Create CSV in memory
         csv = model_results.to_csv(index=False)
         
-        # Create download button
         st.download_button(
             label="Download Model Coefficients",
             data=csv,
